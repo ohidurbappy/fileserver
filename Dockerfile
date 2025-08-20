@@ -1,54 +1,36 @@
 # Build stage
 FROM golang:1.24-alpine AS builder
-
-# Set working directory
 WORKDIR /app
 
-# Copy go mod files
-COPY go.mod go.sum* ./
-
-# Download dependencies
+# Copy and download dependencies
+COPY go.mod ./
 RUN go mod download
 
-# Copy source code
+# Copy source
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o fileserver .
+# Build binary (optimized)
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -trimpath -o fileserver .
 
 # Final stage
-FROM alpine:latest
+FROM scratch
 
-# Install ca-certificates for HTTPS requests (if needed)
-RUN apk --no-cache add ca-certificates
+# Copy binary and certs
+COPY --from=builder /app/fileserver /fileserver
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# Create non-root user
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
-
-# Set working directory
-WORKDIR /app
-
-# Copy the binary from builder stage
-COPY --from=builder /app/fileserver .
-
-# Create uploads directory and set permissions
-RUN mkdir -p /app/uploads && \
-    chown -R appuser:appgroup /app
-
-# Switch to non-root user
-USER appuser
+# Non-root user
+USER 1001
 
 # Expose port
 EXPOSE 3000
 
-# Set default environment variables
+# Environment
 ENV UPLOAD_DIR=/app/uploads
 ENV PORT=3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/uploads/ || exit 1
+# Healthcheck
+HEALTHCHECK CMD [ "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/uploads/" ]
 
-# Run the application
-CMD ["./fileserver"]
+# Run
+ENTRYPOINT ["/fileserver"]
