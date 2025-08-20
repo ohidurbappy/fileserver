@@ -1,0 +1,28 @@
+# Ignore compiled binary
+fileserver
+
+# Ignore uploads directory (will be mounted as volume)
+uploads/
+
+# Ignore Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Ignore version control
+.git/
+.gitignore
+
+# Ignore documentation
+README.md
+*.md
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore OS files
+.DS_Store
+Thumbs.db

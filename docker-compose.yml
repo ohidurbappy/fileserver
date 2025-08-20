@@ -1,0 +1,25 @@
+services:
+  fileserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: go-fileserver
+    ports:
+      - "3000:3000"
+    environment:
+      - UPLOAD_DIR=/app/uploads
+      - PORT=3000
+    volumes:
+      # Mount a local directory to persist uploaded files
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+    
+    # Optional: Add resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
